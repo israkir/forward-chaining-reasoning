@@ -9,7 +9,7 @@
 ;;; $ (fc-init)
 ;;;	$ (test 'criminal-kb)
 ;;;	$ (test 'family-kb)
-;;; $ (test 'lecture-kb)
+;;;  $ (test 'lecture-kb)
 
 
 ;;;; Test knowledge bases
@@ -114,49 +114,49 @@
   "Forward chain with given knowledge base and query."
   (setq new +no-bindings+)
   (loop while (not (equal new ())) do
-	(setq new ())
-	(loop for value being the hash-value of (horn-kb-table kb) do 
-	  (for each sentence in value do
-		(setq new-sentence (rename-variables sentence))
-		;; extract premises in the rule: p1 ^ p2 ^ ... ^ pn
-		(setq premises (conjuncts (->cnf (arg1 new-sentence))))
-		;; extract conclusion in the rule: q
-		(setq conclusion (arg2 new-sentence))
-		;; calc for each subst theta s.t. for each possible binding in kb
-		(setf possible-bindings (find-possible-bindings kb premises bindings fn))
+   (setq new ())
+   (loop for value being the hash-value of (horn-kb-table kb) do 
+     (for each sentence in value do
+      (setq new-sentence (rename-variables sentence))
+      ;; extract premises in the rule: p1 ^ p2 ^ ... ^ pn
+      (setq premises (conjuncts (->cnf (arg1 new-sentence))))
+      ;; extract conclusion in the rule: q
+      (setq conclusion (arg2 new-sentence))
+      ;; calc for each subst theta s.t. for each possible binding in kb
+      (setf possible-bindings (find-possible-bindings kb premises bindings fn))
         (loop for binding in possible-bindings do
-		  (setq result (subst-bindings binding conclusion))
-		  ;; test result is a renaming of some sentence in kb already
-		  (setf already-in-kb nil)
-		  (loop for clause in (gethash (op result) (horn-kb-table kb)) do
-			(setq new-clause (rename-variables clause))
-			(cond ((equal (arg1 new-clause) 'TRUE)
-			  (cond ((null already-in-kb)
-				(setf already-in-kb (renaming? result (arg2 new-clause))))))))
-		  ;; test result is a renaming of some sentence in new already
-		  (setf already-in-new nil)
-		  (loop for fact in new do
+        (setq result (subst-bindings binding conclusion))
+        ;; test result is a renaming of some sentence in kb already
+        (setf already-in-kb nil)
+        (loop for clause in (gethash (op result) (horn-kb-table kb)) do
+         (setq new-clause (rename-variables clause))
+         (cond ((equal (arg1 new-clause) 'TRUE)
+           (cond ((null already-in-kb)
+            (setf already-in-kb (renaming? result (arg2 new-clause))))))))
+        ;; test result is a renaming of some sentence in new already
+        (setf already-in-new nil)
+        (loop for fact in new do
             (cond ((null already-in-new)
-			  (setf already-in-new (renaming? result fact)))))
+           (setf already-in-new (renaming? result fact)))))
           (cond ((and (null already-in-kb) (null already-in-new))
-		    (setf new (append (list result) new))))
-		  (setf unifier (unify result goal))
-		  (cond ((null unifier))
+          (setf new (append (list result) new))))
+        (setf unifier (unify result goal))
+        (cond ((null unifier))
             (t (funcall fn unifier))))))
     (for each fact in new do
-	  (tell kb fact))))
+     (tell kb fact))))
 
 (defun find-possible-bindings (kb premises bindings fn)
   "Recursively get all possible bindings in kb; based on TA's power-assignment."
   (cond ((null premises) (list bindings))
-	(t (let ((first-of-premises (first premises)) 
-	      (rest-of-premises (rest premises)) 
-		  (result '()))
+   (t (let ((first-of-premises (first premises)) 
+         (rest-of-premises (rest premises)) 
+        (result '()))
       (for each clause in (gethash (op first-of-premises) (horn-kb-table kb)) do
-	    (let ((new-clause (rename-variables clause)))
-	      (cond ((equal (arg1 new-clause) 'TRUE)
-	        (setq result 
-			  (append 
-			    (find-possible-bindings kb rest-of-premises (unify first-of-premises (arg2 new-clause) bindings) fn) 
-				  result))))))
+       (let ((new-clause (rename-variables clause)))
+         (cond ((equal (arg1 new-clause) 'TRUE)
+           (setq result 
+           (append 
+             (find-possible-bindings kb rest-of-premises (unify first-of-premises (arg2 new-clause) bindings) fn) 
+              result))))))
     result))))
